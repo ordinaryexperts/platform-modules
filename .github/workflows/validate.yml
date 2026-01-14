@@ -1,0 +1,64 @@
+name: Validate Modules
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.changes.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get changed modules
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- modules/ | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            CHANGED=$(git diff --name-only HEAD~1 -- modules/ 2>/dev/null | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))' || echo '[]')
+          fi
+          echo "modules=$CHANGED" >> $GITHUB_OUTPUT
+
+  validate:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.modules != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.detect-changes.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.6.0
+
+      - name: Format Check
+        run: tofu fmt -check -recursive modules/${{ matrix.module }}
+
+      - name: Initialize
+        working-directory: modules/${{ matrix.module }}
+        run: tofu init -backend=false
+
+      - name: Validate
+        working-directory: modules/${{ matrix.module }}
+        run: tofu validate
+
+  format-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.6.0
+
+      - name: Format Check All
+        run: tofu fmt -check -recursive modules/
