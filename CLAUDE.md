@@ -96,16 +96,27 @@ Examples: `s3-bucket/v1.0.0`, `vpc/v2.1.0`, `web-app/v1.3.0`
 - **Minor**: New features (new variables, resources) - backwards compatible
 - **Patch**: Bug fixes only
 
-## Git Flow
+## Git Workflow (Trunk-Based Development)
 
-- `main` - Production releases only
-- `develop` - Integration branch
-- `feature/<module>-<description>` - New work
-- `hotfix/<module>-<description>` - Urgent fixes
+This repository uses trunk-based development:
+
+- `main` - The single integration branch; all work merges here
+- `feature/<module>-<description>` - Short-lived feature branches
+- `fix/<module>-<description>` - Bug fix branches
+
+Feature branches should be small and merge frequently to main.
 
 ## Releases
 
-Releases are managed through the OE Platform, which creates GitHub Releases with auto-generated release notes.
+Releases are triggered automatically when a path-based tag is pushed:
+
+```bash
+# Tag format: <module-name>/v<major>.<minor>.<patch>
+git tag lza-foundation/v1.0.0
+git push origin lza-foundation/v1.0.0
+```
+
+This creates a GitHub Release with auto-generated release notes.
 
 **No CHANGELOG.md file is required.** Release notes are:
 1. Auto-generated from commit messages between releases
@@ -132,13 +143,6 @@ Modules are sourced by clients using path-based version tags:
 # Example: Using the s3-bucket module at version 1.2.0
 module "bucket" {
   source = "github.com/ordinaryexperts/platform-modules//modules/s3-bucket?ref=s3-bucket/v1.2.0"
-
-  # ... module variables
-}
-
-# Example: Using develop branch for development
-module "bucket" {
-  source = "github.com/ordinaryexperts/platform-modules//modules/s3-bucket?ref=develop"
 
   # ... module variables
 }

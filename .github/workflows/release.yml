@@ -1,0 +1,30 @@
+name: Release Module
+
+on:
+  push:
+    tags:
+      - '*/v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract module info
+        id: info
+        run: |
+          TAG="${{ github.ref_name }}"
+          MODULE="${TAG%/v*}"
+          VERSION="${TAG#*/}"
+          echo "module=$MODULE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Module: $MODULE, Version: $VERSION"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "${{ steps.info.outputs.module }} ${{ steps.info.outputs.version }}"
+          generate_release_notes: true
