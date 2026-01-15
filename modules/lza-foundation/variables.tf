@@ -114,34 +114,3 @@ variable "tags" {
   default     = {}
 }
 
-# Organizational Unit Structure
-variable "organizational_units" {
-  description = "List of organizational units to create"
-  type = list(object({
-    name     = string
-    path     = string
-    children = optional(list(string), [])
-  }))
-  default = [
-    {
-      name     = "Security"
-      path     = "Root"
-      children = []
-    },
-    {
-      name     = "Infrastructure"
-      path     = "Root"
-      children = ["Dev", "Prod"]
-    },
-    {
-      name     = "Workloads"
-      path     = "Root"
-      children = ["Dev", "Stage", "Prod"]
-    },
-    {
-      name     = "Sandbox"
-      path     = "Root"
-      children = []
-    }
-  ]
-}

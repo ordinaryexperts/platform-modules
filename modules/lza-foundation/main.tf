@@ -117,7 +117,7 @@ resource "aws_iam_role_policy" "platform_lza_access" {
           "states:GetExecutionHistory"
         ]
         Resource = [
-          "arn:aws:states:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stateMachine:${var.accelerator_prefix}-*"
+          "arn:aws:states:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:stateMachine:${var.accelerator_prefix}-*"
         ]
       },
       {
@@ -127,7 +127,7 @@ resource "aws_iam_role_policy" "platform_lza_access" {
           "execute-api:Invoke"
         ]
         Resource = [
-          "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+          "arn:aws:execute-api:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:*"
         ]
       },
       {
@@ -153,7 +153,7 @@ resource "aws_iam_role_policy" "platform_lza_access" {
           "codecommit:GetFolder"
         ]
         Resource = [
-          "arn:aws:codecommit:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${var.accelerator_prefix}-config"
+          "arn:aws:codecommit:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:${var.accelerator_prefix}-config"
         ]
       }
     ]
@@ -184,7 +184,7 @@ resource "aws_ssm_parameter" "lza_config" {
     accelerator_prefix    = var.accelerator_prefix
     repository_name       = var.repository_name
     management_account_id = data.aws_caller_identity.current.account_id
-    region                = data.aws_region.current.name
+    region                = data.aws_region.current.id
     pipeline_name         = "${var.accelerator_prefix}-Pipeline"
     config_repo           = "${var.accelerator_prefix}-config"
     platform_role_arn     = aws_iam_role.platform_lza_access.arn

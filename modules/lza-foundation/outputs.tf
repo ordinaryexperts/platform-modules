@@ -37,7 +37,7 @@ output "management_account_id" {
 
 output "region" {
   description = "AWS region where LZA is deployed"
-  value       = data.aws_region.current.name
+  value       = data.aws_region.current.id
 }
 
 output "pipeline_name" {
