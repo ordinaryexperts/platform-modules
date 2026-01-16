@@ -47,41 +47,49 @@ Examples:
 
 ## Development
 
-This repository uses [Git Flow](https://nvie.com/posts/a-successful-git-branching-model/) branching:
+This repository uses **trunk-based development**:
 
-- `main` - Production-ready releases only
-- `develop` - Integration branch for features
-- `feature/*` - New modules or enhancements
-- `release/*` - Release preparation
-- `hotfix/*` - Urgent fixes to production
+```
+main           <-- trunk (always deployable)
+  ^
+feature/*      <-- short-lived feature branches
+  |
+  +-- tags     <-- module-name/v1.0.0 (release points)
+```
 
 ### Workflow
 
-1. **New module or feature:**
-   ```bash
-   git checkout develop
-   git pull origin develop
-   git checkout -b feature/new-module-name
-   # ... make changes ...
-   git push -u origin feature/new-module-name
-   # Create PR to develop
-   ```
-
-2. **Release a module:**
+1. **Create a feature branch from main:**
    ```bash
    git checkout main
    git pull origin main
-   # Tag the specific module with its version
+   git checkout -b feature/my-change
+   ```
+
+2. **Make your changes and push:**
+   ```bash
+   # ... make changes ...
+   git add .
+   git commit -m "feat: add new capability"
+   git push -u origin feature/my-change
+   ```
+
+3. **Open PR to main and merge after review**
+
+4. **Tag a release when ready:**
+   ```bash
+   git checkout main
+   git pull origin main
    git tag -a "s3-bucket/v1.0.0" -m "s3-bucket v1.0.0: Initial release"
    git push origin "s3-bucket/v1.0.0"
    ```
 
-3. **Hotfix:**
-   ```bash
-   git checkout -b hotfix/s3-bucket-fix main
-   # ... fix the issue ...
-   # Merge to both main and develop
-   ```
+**Key principles:**
+- Keep feature branches short-lived (hours to days, not weeks)
+- Merge to main frequently
+- Main should always be deployable
+- Dev environments track main directly
+- Staging/prod environments use versioned tags
 
 ### Module Standards
 
