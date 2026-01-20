@@ -80,9 +80,9 @@ variable "repository_branch_name" {
 }
 
 variable "enable_approval_stage" {
-  description = "Enable manual approval stage in CodePipeline"
+  description = "Enable manual approval stage in CodePipeline (requires approval_stage_notify_email if true)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "approval_stage_notify_email" {
