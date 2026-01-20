@@ -66,11 +66,6 @@ variable "control_tower_enabled" {
   default     = false
 }
 
-variable "enable_single_account_mode" {
-  description = "Enable single account mode (for testing/dev)"
-  type        = bool
-  default     = false
-}
 
 variable "repository_name" {
   description = "Name of the CodeCommit repository for LZA configuration"
@@ -96,11 +91,6 @@ variable "approval_stage_notify_email" {
   default     = ""
 }
 
-variable "management_account_access_role" {
-  description = "Name of the IAM role to assume in member accounts"
-  type        = string
-  default     = "AWSControlTowerExecution"
-}
 
 variable "create_platform_api" {
   description = "Create API Gateway for Platform integration"

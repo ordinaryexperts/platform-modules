@@ -19,12 +19,10 @@ locals {
     log_archive_account_email      = var.log_archive_account_email
     audit_account_email            = var.audit_account_email
     control_tower_enabled          = var.control_tower_enabled
-    enable_single_account_mode     = var.enable_single_account_mode
     repository_name                = var.repository_name
     repository_branch_name         = var.repository_branch_name
     enable_approval_stage          = var.enable_approval_stage
     approval_stage_notify_email    = var.approval_stage_notify_email
-    management_account_access_role = var.management_account_access_role
   }
 
   tags = merge(var.tags, {
@@ -53,12 +51,10 @@ resource "aws_cloudformation_stack" "lza_installer" {
     LogArchiveAccountEmail       = local.lza_config.log_archive_account_email
     AuditAccountEmail            = local.lza_config.audit_account_email
     ControlTowerEnabled          = local.lza_config.control_tower_enabled ? "Yes" : "No"
-    EnableSingleAccountMode      = local.lza_config.enable_single_account_mode ? "Yes" : "No"
     RepositoryName               = local.lza_config.repository_name
     RepositoryBranchName         = local.lza_config.repository_branch_name
     EnableApprovalStage          = local.lza_config.enable_approval_stage ? "Yes" : "No"
     ApprovalStageNotifyEmailList = local.lza_config.approval_stage_notify_email
-    ManagementAccountAccessRole  = local.lza_config.management_account_access_role
   }
 
   tags = local.tags
