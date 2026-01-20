@@ -114,3 +114,14 @@ variable "tags" {
   default     = {}
 }
 
+
+variable "configuration_repository_location" {
+  description = "Where to host LZA configuration files (codecommit, s3, or codeconnection)"
+  type        = string
+  default     = "codecommit"
+
+  validation {
+    condition     = contains(["codecommit", "s3", "codeconnection"], var.configuration_repository_location)
+    error_message = "Must be one of: codecommit, s3, codeconnection"
+  }
+}

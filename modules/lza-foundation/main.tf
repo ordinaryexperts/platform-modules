@@ -47,6 +47,7 @@ resource "aws_cloudformation_stack" "lza_installer" {
   template_url = var.lza_template_url
 
   parameters = {
+    ConfigurationRepositoryLocation = var.configuration_repository_location
     AcceleratorPrefix            = local.lza_config.accelerator_prefix
     ManagementAccountEmail       = local.lza_config.management_account_email
     LogArchiveAccountEmail       = local.lza_config.log_archive_account_email
