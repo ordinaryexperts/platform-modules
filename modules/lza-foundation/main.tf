@@ -51,8 +51,8 @@ resource "aws_cloudformation_stack" "lza_installer" {
     LogArchiveAccountEmail       = local.lza_config.log_archive_account_email
     AuditAccountEmail            = local.lza_config.audit_account_email
     ControlTowerEnabled          = local.lza_config.control_tower_enabled ? "Yes" : "No"
-    RepositoryName               = local.lza_config.repository_name
-    RepositoryBranchName         = local.lza_config.repository_branch_name
+    # RepositoryName defaults to "landing-zone-accelerator-on-aws" (the LZA source code repo)
+    # RepositoryBranchName defaults to "main"
     EnableApprovalStage          = local.lza_config.enable_approval_stage ? "Yes" : "No"
     ApprovalStageNotifyEmailList = local.lza_config.approval_stage_notify_email
   }
