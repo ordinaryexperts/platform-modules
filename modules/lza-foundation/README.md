@@ -65,7 +65,6 @@ Before using this module:
 | github_oidc_provider_arn | ARN of GitHub OIDC provider | `string` | n/a | yes |
 | platform_github_org | GitHub organization for role trust | `string` | `"ordinaryexperts"` | no |
 | accelerator_prefix | Prefix for all LZA resources | `string` | `"lza"` | no |
-| lza_template_url | URL to LZA CloudFormation template | `string` | AWS default | no |
 | control_tower_enabled | Whether AWS Control Tower is enabled | `bool` | `false` | no |
 | enable_single_account_mode | Single account mode for testing | `bool` | `false` | no |
 | repository_name | CodeCommit repository name | `string` | `"lza-config"` | no |
@@ -95,6 +94,15 @@ Before using this module:
 ## Deployment Time
 
 The LZA CloudFormation stack can take 60-90 minutes to deploy. The module sets appropriate timeouts.
+
+## Module Upgrades and LZA Versions
+
+**Important:** This module pins a specific LZA version internally. When you upgrade to a new version of this module, it may include a newer LZA version, which will trigger a CloudFormation stack update and LZA upgrade process (60-90 minutes).
+
+Before upgrading this module:
+1. Review the [LZA release notes](https://github.com/awslabs/landing-zone-accelerator-on-aws/releases) for breaking changes
+2. Plan for the upgrade window (60-90 minutes)
+3. Ensure the approval stage is enabled if you want manual control over the upgrade
 
 ## License
 

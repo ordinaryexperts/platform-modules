@@ -54,12 +54,6 @@ variable "accelerator_prefix" {
   }
 }
 
-variable "lza_template_url" {
-  description = "URL to the LZA CloudFormation installer template"
-  type        = string
-  default     = "https://s3.amazonaws.com/solutions-reference/landing-zone-accelerator-on-aws/latest/AWSAccelerator-InstallerStack.template"
-}
-
 variable "control_tower_enabled" {
   description = "Whether AWS Control Tower is enabled in this account"
   type        = bool

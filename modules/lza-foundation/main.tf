@@ -12,6 +12,11 @@
 locals {
   stack_name = "AWSAccelerator-Installer"
 
+  # LZA CloudFormation template URL - pinned to specific version for predictable deployments.
+  # Updating this module version may trigger an LZA upgrade (60-90 minute process).
+  # See: https://github.com/awslabs/landing-zone-accelerator-on-aws/releases
+  lza_template_url = "https://s3.amazonaws.com/solutions-reference/landing-zone-accelerator-on-aws/v1.14.2/AWSAccelerator-InstallerStack.template"
+
   # LZA configuration defaults
   lza_config = {
     accelerator_prefix             = var.accelerator_prefix
@@ -41,8 +46,8 @@ resource "aws_cloudformation_stack" "lza_installer" {
   name         = local.stack_name
   capabilities = ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
 
-  # LZA CloudFormation template URL from AWS
-  template_url = var.lza_template_url
+  # LZA CloudFormation template URL - pinned in locals
+  template_url = local.lza_template_url
 
   parameters = {
     ConfigurationRepositoryLocation = var.configuration_repository_location
