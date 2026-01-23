@@ -109,3 +109,18 @@ variable "configuration_repository_location" {
     error_message = "Must be one of: codecommit, s3, codeconnection"
   }
 }
+
+variable "github_config_repo" {
+  description = "GitHub repository configuration for LZA config when using codeconnection"
+  type = object({
+    connection_arn = string
+    owner          = string
+    name           = string
+  })
+  default = null
+
+  validation {
+    condition     = var.github_config_repo == null || (var.github_config_repo.connection_arn != "" && var.github_config_repo.owner != "" && var.github_config_repo.name != "")
+    error_message = "When github_config_repo is provided, all fields (connection_arn, owner, name) must be non-empty."
+  }
+}

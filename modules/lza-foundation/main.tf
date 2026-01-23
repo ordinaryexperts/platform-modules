@@ -19,15 +19,15 @@ locals {
 
   # LZA configuration defaults
   lza_config = {
-    accelerator_prefix             = var.accelerator_prefix
-    management_account_email       = var.management_account_email
-    log_archive_account_email      = var.log_archive_account_email
-    audit_account_email            = var.audit_account_email
-    control_tower_enabled          = var.control_tower_enabled
-    repository_name                = var.repository_name
-    repository_branch_name         = var.repository_branch_name
-    enable_approval_stage          = var.enable_approval_stage
-    approval_stage_notify_email    = var.approval_stage_notify_email
+    accelerator_prefix          = var.accelerator_prefix
+    management_account_email    = var.management_account_email
+    log_archive_account_email   = var.log_archive_account_email
+    audit_account_email         = var.audit_account_email
+    control_tower_enabled       = var.control_tower_enabled
+    repository_name             = var.repository_name
+    repository_branch_name      = var.repository_branch_name
+    enable_approval_stage       = var.enable_approval_stage
+    approval_stage_notify_email = var.approval_stage_notify_email
   }
 
   tags = merge(var.tags, {
@@ -49,18 +49,27 @@ resource "aws_cloudformation_stack" "lza_installer" {
   # LZA CloudFormation template URL - pinned in locals
   template_url = local.lza_template_url
 
-  parameters = {
-    ConfigurationRepositoryLocation = var.configuration_repository_location
-    AcceleratorPrefix            = local.lza_config.accelerator_prefix
-    ManagementAccountEmail       = local.lza_config.management_account_email
-    LogArchiveAccountEmail       = local.lza_config.log_archive_account_email
-    AuditAccountEmail            = local.lza_config.audit_account_email
-    ControlTowerEnabled          = local.lza_config.control_tower_enabled ? "Yes" : "No"
-    # RepositoryName defaults to "landing-zone-accelerator-on-aws" (the LZA source code repo)
-    # RepositoryBranchName defaults to "main"
-    EnableApprovalStage          = local.lza_config.enable_approval_stage ? "Yes" : "No"
-    ApprovalStageNotifyEmailList = local.lza_config.approval_stage_notify_email
-  }
+  parameters = merge(
+    {
+      ConfigurationRepositoryLocation = var.configuration_repository_location
+      AcceleratorPrefix               = local.lza_config.accelerator_prefix
+      ManagementAccountEmail          = local.lza_config.management_account_email
+      LogArchiveAccountEmail          = local.lza_config.log_archive_account_email
+      AuditAccountEmail               = local.lza_config.audit_account_email
+      ControlTowerEnabled             = local.lza_config.control_tower_enabled ? "Yes" : "No"
+      # RepositoryName defaults to "landing-zone-accelerator-on-aws" (the LZA source code repo)
+      # RepositoryBranchName defaults to "main"
+      EnableApprovalStage          = local.lza_config.enable_approval_stage ? "Yes" : "No"
+      ApprovalStageNotifyEmailList = local.lza_config.approval_stage_notify_email
+    },
+    # CodeConnection parameters for GitHub config repo
+    var.github_config_repo != null ? {
+      UseExistingConfigRepo         = "Yes"
+      ExistingConfigRepositoryName  = var.github_config_repo.name
+      ExistingConfigRepositoryOwner = var.github_config_repo.owner
+      ConfigCodeConnectionArn       = var.github_config_repo.connection_arn
+    } : {}
+  )
 
   tags = local.tags
 
