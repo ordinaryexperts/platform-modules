@@ -24,8 +24,6 @@ locals {
     log_archive_account_email   = var.log_archive_account_email
     audit_account_email         = var.audit_account_email
     control_tower_enabled       = var.control_tower_enabled
-    repository_name             = var.repository_name
-    repository_branch_name      = var.repository_branch_name
     enable_approval_stage       = var.enable_approval_stage
     approval_stage_notify_email = var.approval_stage_notify_email
   }
@@ -51,23 +49,36 @@ resource "aws_cloudformation_stack" "lza_installer" {
 
   parameters = merge(
     {
+      # LZA source code repository settings
+      RepositorySource     = var.lza_source_location
+      RepositoryOwner      = var.lza_source_owner
+      RepositoryName       = var.lza_source_repo_name
+      RepositoryBranchName = var.lza_source_branch
+
+      # LZA configuration repository location
       ConfigurationRepositoryLocation = var.configuration_repository_location
-      AcceleratorPrefix               = local.lza_config.accelerator_prefix
-      ManagementAccountEmail          = local.lza_config.management_account_email
-      LogArchiveAccountEmail          = local.lza_config.log_archive_account_email
-      AuditAccountEmail               = local.lza_config.audit_account_email
-      ControlTowerEnabled             = local.lza_config.control_tower_enabled ? "Yes" : "No"
-      # RepositoryName defaults to "landing-zone-accelerator-on-aws" (the LZA source code repo)
-      # RepositoryBranchName defaults to "main"
+
+      # Core LZA settings
+      AcceleratorPrefix      = local.lza_config.accelerator_prefix
+      ManagementAccountEmail = local.lza_config.management_account_email
+      LogArchiveAccountEmail = local.lza_config.log_archive_account_email
+      AuditAccountEmail      = local.lza_config.audit_account_email
+      ControlTowerEnabled    = local.lza_config.control_tower_enabled ? "Yes" : "No"
+
+      # Pipeline settings
       EnableApprovalStage          = local.lza_config.enable_approval_stage ? "Yes" : "No"
       ApprovalStageNotifyEmailList = local.lza_config.approval_stage_notify_email
+
+      # Diagnostics
+      EnableDiagnosticsPack = var.enable_diagnostics_pack ? "Yes" : "No"
     },
     # CodeConnection parameters for GitHub config repo
     var.github_config_repo != null ? {
-      UseExistingConfigRepo         = "Yes"
-      ExistingConfigRepositoryName  = var.github_config_repo.name
-      ExistingConfigRepositoryOwner = var.github_config_repo.owner
-      ConfigCodeConnectionArn       = var.github_config_repo.connection_arn
+      UseExistingConfigRepo              = "Yes"
+      ExistingConfigRepositoryName       = var.github_config_repo.name
+      ExistingConfigRepositoryBranchName = var.github_config_repo.branch
+      ExistingConfigRepositoryOwner      = var.github_config_repo.owner
+      ConfigCodeConnectionArn            = var.github_config_repo.connection_arn
     } : {}
   )
 
@@ -193,11 +204,11 @@ resource "aws_ssm_parameter" "lza_config" {
   type        = "String"
   value = jsonencode({
     accelerator_prefix    = var.accelerator_prefix
-    repository_name       = var.repository_name
+    lza_source_repo       = var.lza_source_repo_name
     management_account_id = data.aws_caller_identity.current.account_id
     region                = data.aws_region.current.id
     pipeline_name         = "${var.accelerator_prefix}-Pipeline"
-    config_repo           = "${var.accelerator_prefix}-config"
+    config_repo           = var.github_config_repo != null ? var.github_config_repo.name : "${var.accelerator_prefix}-config"
     platform_role_arn     = aws_iam_role.platform_lza_access.arn
   })
 

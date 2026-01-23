@@ -61,16 +61,33 @@ variable "control_tower_enabled" {
 }
 
 
-variable "repository_name" {
-  description = "Name of the CodeCommit repository for LZA configuration"
+variable "lza_source_location" {
+  description = "Where to host the LZA source code (github or codecommit)"
   type        = string
-  default     = "lza-config"
+  default     = "github"
+
+  validation {
+    condition     = contains(["github", "codecommit"], var.lza_source_location)
+    error_message = "Must be one of: github, codecommit"
+  }
 }
 
-variable "repository_branch_name" {
-  description = "Branch name for LZA configuration repository"
+variable "lza_source_owner" {
+  description = "Owner of the LZA source code repository (GitHub only)"
   type        = string
-  default     = "main"
+  default     = "awslabs"
+}
+
+variable "lza_source_repo_name" {
+  description = "Name of the LZA source code repository"
+  type        = string
+  default     = "landing-zone-accelerator-on-aws"
+}
+
+variable "lza_source_branch" {
+  description = "Branch name for the LZA source code repository"
+  type        = string
+  default     = "release/v1.14.2"
 }
 
 variable "enable_approval_stage" {
@@ -116,6 +133,7 @@ variable "github_config_repo" {
     connection_arn = string
     owner          = string
     name           = string
+    branch         = optional(string, "main")
   })
   default = null
 
@@ -123,4 +141,10 @@ variable "github_config_repo" {
     condition     = var.github_config_repo == null || (var.github_config_repo.connection_arn != "" && var.github_config_repo.owner != "" && var.github_config_repo.name != "")
     error_message = "When github_config_repo is provided, all fields (connection_arn, owner, name) must be non-empty."
   }
+}
+
+variable "enable_diagnostics_pack" {
+  description = "Enable diagnostics pack for root cause analysis"
+  type        = bool
+  default     = true
 }
