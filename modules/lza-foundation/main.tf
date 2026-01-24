@@ -28,6 +28,9 @@ locals {
     approval_stage_notify_email = var.approval_stage_notify_email
   }
 
+  # S3 bucket name for LZA configuration (created automatically by LZA when using S3 source)
+  config_bucket_name = "aws-accelerator-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.id}"
+
   tags = merge(var.tags, {
     ManagedBy    = "OE-Platform"
     Module       = "lza-foundation"
@@ -47,40 +50,31 @@ resource "aws_cloudformation_stack" "lza_installer" {
   # LZA CloudFormation template URL - pinned in locals
   template_url = local.lza_template_url
 
-  parameters = merge(
-    {
-      # LZA source code repository settings
-      RepositorySource     = var.lza_source_location
-      RepositoryOwner      = var.lza_source_owner
-      RepositoryName       = var.lza_source_repo_name
-      RepositoryBranchName = var.lza_source_branch
+  parameters = {
+    # LZA source code repository settings
+    RepositorySource     = var.lza_source_location
+    RepositoryOwner      = var.lza_source_owner
+    RepositoryName       = var.lza_source_repo_name
+    RepositoryBranchName = var.lza_source_branch
 
-      # LZA configuration repository location
-      ConfigurationRepositoryLocation = var.configuration_repository_location
+    # LZA configuration repository location - always S3
+    # The GitHub workflow uploads config files to S3, enabling deploy-before-merge
+    ConfigurationRepositoryLocation = "s3"
 
-      # Core LZA settings
-      AcceleratorPrefix      = local.lza_config.accelerator_prefix
-      ManagementAccountEmail = local.lza_config.management_account_email
-      LogArchiveAccountEmail = local.lza_config.log_archive_account_email
-      AuditAccountEmail      = local.lza_config.audit_account_email
-      ControlTowerEnabled    = local.lza_config.control_tower_enabled ? "Yes" : "No"
+    # Core LZA settings
+    AcceleratorPrefix      = local.lza_config.accelerator_prefix
+    ManagementAccountEmail = local.lza_config.management_account_email
+    LogArchiveAccountEmail = local.lza_config.log_archive_account_email
+    AuditAccountEmail      = local.lza_config.audit_account_email
+    ControlTowerEnabled    = local.lza_config.control_tower_enabled ? "Yes" : "No"
 
-      # Pipeline settings
-      EnableApprovalStage          = local.lza_config.enable_approval_stage ? "Yes" : "No"
-      ApprovalStageNotifyEmailList = local.lza_config.approval_stage_notify_email
+    # Pipeline settings
+    EnableApprovalStage          = local.lza_config.enable_approval_stage ? "Yes" : "No"
+    ApprovalStageNotifyEmailList = local.lza_config.approval_stage_notify_email
 
-      # Diagnostics
-      EnableDiagnosticsPack = var.enable_diagnostics_pack ? "Yes" : "No"
-    },
-    # CodeConnection parameters for GitHub config repo
-    var.github_config_repo != null ? {
-      UseExistingConfigRepo              = "Yes"
-      ExistingConfigRepositoryName       = var.github_config_repo.name
-      ExistingConfigRepositoryBranchName = var.github_config_repo.branch
-      ExistingConfigRepositoryOwner      = var.github_config_repo.owner
-      ConfigCodeConnectionArn            = var.github_config_repo.connection_arn
-    } : {}
-  )
+    # Diagnostics
+    EnableDiagnosticsPack = var.enable_diagnostics_pack ? "Yes" : "No"
+  }
 
   tags = local.tags
 
@@ -166,16 +160,28 @@ resource "aws_iam_role_policy" "platform_lza_access" {
         Resource = "*"
       },
       {
-        Sid    = "ReadCodeCommit"
+        Sid    = "ManageConfigBucket"
         Effect = "Allow"
         Action = [
-          "codecommit:GetRepository",
-          "codecommit:GetBranch",
-          "codecommit:GetFile",
-          "codecommit:GetFolder"
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
         ]
         Resource = [
-          "arn:aws:codecommit:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:${var.accelerator_prefix}-config"
+          "arn:aws:s3:::${local.config_bucket_name}",
+          "arn:aws:s3:::${local.config_bucket_name}/*"
+        ]
+      },
+      {
+        Sid    = "TriggerLzaPipeline"
+        Effect = "Allow"
+        Action = [
+          "codepipeline:StartPipelineExecution",
+          "codepipeline:GetPipelineExecution",
+          "codepipeline:GetPipelineState"
+        ]
+        Resource = [
+          "arn:aws:codepipeline:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:${var.accelerator_prefix}-Pipeline"
         ]
       }
     ]

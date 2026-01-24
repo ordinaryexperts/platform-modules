@@ -45,9 +45,14 @@ output "pipeline_name" {
   value       = "${var.accelerator_prefix}-Pipeline"
 }
 
-output "config_repository" {
-  description = "Name of the LZA configuration CodeCommit repository"
-  value       = "${var.accelerator_prefix}-config"
+output "config_bucket_name" {
+  description = "S3 bucket name for LZA configuration files"
+  value       = local.config_bucket_name
+}
+
+output "config_bucket_key" {
+  description = "S3 object key for the zipped LZA configuration"
+  value       = "zipped/aws-accelerator-config.zip"
 }
 
 output "api_gateway_id" {

@@ -116,32 +116,9 @@ variable "tags" {
 }
 
 
-variable "configuration_repository_location" {
-  description = "Where to host LZA configuration files (codecommit, s3, or codeconnection)"
-  type        = string
-  default     = "codecommit"
-
-  validation {
-    condition     = contains(["codecommit", "s3", "codeconnection"], var.configuration_repository_location)
-    error_message = "Must be one of: codecommit, s3, codeconnection"
-  }
-}
-
-variable "github_config_repo" {
-  description = "GitHub repository configuration for LZA config when using codeconnection"
-  type = object({
-    connection_arn = string
-    owner          = string
-    name           = string
-    branch         = optional(string, "main")
-  })
-  default = null
-
-  validation {
-    condition     = var.github_config_repo == null || (var.github_config_repo.connection_arn != "" && var.github_config_repo.owner != "" && var.github_config_repo.name != "")
-    error_message = "When github_config_repo is provided, all fields (connection_arn, owner, name) must be non-empty."
-  }
-}
+# Configuration repository is always S3. The GitHub workflow uploads config files
+# from the client's lza-config repository to S3, then triggers the pipeline.
+# This enables deploy-before-merge workflows where feature branches can be deployed.
 
 variable "enable_diagnostics_pack" {
   description = "Enable diagnostics pack for root cause analysis"
