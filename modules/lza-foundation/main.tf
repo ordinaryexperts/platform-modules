@@ -214,7 +214,7 @@ resource "aws_ssm_parameter" "lza_config" {
     management_account_id = data.aws_caller_identity.current.account_id
     region                = data.aws_region.current.id
     pipeline_name         = "${var.accelerator_prefix}-Pipeline"
-    config_repo           = var.github_config_repo != null ? var.github_config_repo.name : "${var.accelerator_prefix}-config"
+    config_bucket         = local.config_bucket_name
     platform_role_arn     = aws_iam_role.platform_lza_access.arn
   })
 
