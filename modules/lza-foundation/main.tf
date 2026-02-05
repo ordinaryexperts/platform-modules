@@ -203,6 +203,55 @@ resource "aws_api_gateway_rest_api" "platform_integration" {
   tags = local.tags
 }
 
+# Update the Toolkit CodeBuild project with Lambda concurrency limit
+# This bypasses the Lambda concurrent execution validation that fails on new accounts
+# See: https://github.com/awslabs/landing-zone-accelerator-on-aws/issues/984
+resource "null_resource" "toolkit_lambda_concurrency" {
+  count = var.lambda_concurrency_limit > 0 ? 1 : 0
+
+  triggers = {
+    stack_id          = aws_cloudformation_stack.lza_installer.id
+    concurrency_limit = var.lambda_concurrency_limit
+  }
+
+  provisioner "local-exec" {
+    environment = {
+      AWS_REGION     = data.aws_region.current.name
+      PROJECT_NAME   = "${var.accelerator_prefix}-ToolkitProject"
+      CONCURRENCY    = var.lambda_concurrency_limit
+    }
+
+    command = <<-EOT
+      set -e
+
+      # Get current environment variables from the Toolkit project
+      CURRENT_ENV=$(aws codebuild batch-get-projects \
+        --names "$PROJECT_NAME" \
+        --query 'projects[0].environment.environmentVariables' \
+        --output json)
+
+      # Add the concurrency limit variable (unique_by prevents duplicates)
+      NEW_ENV=$(echo "$CURRENT_ENV" | jq --arg limit "$CONCURRENCY" \
+        '. + [{"name": "ACCELERATOR_LAMBDA_CONCURRENCY_LIMIT", "value": $limit, "type": "PLAINTEXT"}] | unique_by(.name)')
+
+      # Get full environment config and update variables
+      FULL_ENV=$(aws codebuild batch-get-projects \
+        --names "$PROJECT_NAME" \
+        --query 'projects[0].environment' \
+        --output json | jq --argjson envVars "$NEW_ENV" '.environmentVariables = $envVars')
+
+      # Update the CodeBuild project
+      aws codebuild update-project \
+        --name "$PROJECT_NAME" \
+        --environment "$FULL_ENV"
+
+      echo "Successfully added ACCELERATOR_LAMBDA_CONCURRENCY_LIMIT=$CONCURRENCY to $PROJECT_NAME"
+    EOT
+  }
+
+  depends_on = [aws_cloudformation_stack.lza_installer]
+}
+
 # Store LZA configuration in SSM for Platform to retrieve
 resource "aws_ssm_parameter" "lza_config" {
   name        = "/${var.accelerator_prefix}/platform/config"

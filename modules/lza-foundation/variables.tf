@@ -125,3 +125,14 @@ variable "enable_diagnostics_pack" {
   type        = bool
   default     = true
 }
+
+variable "lambda_concurrency_limit" {
+  description = "Set ACCELERATOR_LAMBDA_CONCURRENCY_LIMIT on the Toolkit CodeBuild project. This bypasses Lambda concurrent execution validation that fails on new AWS accounts. Set to 0 to disable. See: https://github.com/awslabs/landing-zone-accelerator-on-aws/issues/984"
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.lambda_concurrency_limit >= 0
+    error_message = "Lambda concurrency limit must be 0 or greater."
+  }
+}
