@@ -31,17 +31,6 @@ variable "audit_account_email" {
   }
 }
 
-variable "github_oidc_provider_arn" {
-  description = "ARN of the GitHub OIDC provider for role assumption"
-  type        = string
-}
-
-variable "platform_github_org" {
-  description = "GitHub organization that hosts the Platform (for role trust)"
-  type        = string
-  default     = "ordinaryexperts"
-}
-
 # Optional Variables with Defaults
 variable "accelerator_prefix" {
   description = "Prefix for all LZA resources (must be lowercase)"
@@ -102,12 +91,6 @@ variable "approval_stage_notify_email" {
   default     = ""
 }
 
-
-variable "create_platform_api" {
-  description = "Create API Gateway for Platform integration"
-  type        = bool
-  default     = true
-}
 
 variable "tags" {
   description = "Additional tags to apply to all resources"

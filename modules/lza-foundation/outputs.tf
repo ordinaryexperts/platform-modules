@@ -10,16 +10,6 @@ output "stack_outputs" {
   value       = aws_cloudformation_stack.lza_installer.outputs
 }
 
-output "platform_lza_role_arn" {
-  description = "ARN of the IAM role for Platform to access LZA"
-  value       = aws_iam_role.platform_lza_access.arn
-}
-
-output "platform_lza_role_name" {
-  description = "Name of the IAM role for Platform to access LZA"
-  value       = aws_iam_role.platform_lza_access.name
-}
-
 output "config_ssm_parameter" {
   description = "SSM parameter path containing LZA configuration"
   value       = aws_ssm_parameter.lza_config.name
@@ -55,12 +45,3 @@ output "config_bucket_key" {
   value       = "zipped/aws-accelerator-config.zip"
 }
 
-output "api_gateway_id" {
-  description = "ID of the Platform integration API Gateway"
-  value       = var.create_platform_api ? aws_api_gateway_rest_api.platform_integration[0].id : null
-}
-
-output "api_gateway_endpoint" {
-  description = "Endpoint URL for the Platform integration API Gateway"
-  value       = var.create_platform_api ? aws_api_gateway_rest_api.platform_integration[0].execution_arn : null
-}
