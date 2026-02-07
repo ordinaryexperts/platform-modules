@@ -116,17 +116,20 @@ resource "null_resource" "toolkit_lambda_concurrency" {
       NEW_ENV=$(echo "$CURRENT_ENV" | jq --arg limit "$CONCURRENCY" \
         '. + [{"name": "ACCELERATOR_LAMBDA_CONCURRENCY_LIMIT", "value": $limit, "type": "PLAINTEXT"}] | unique_by(.name)')
 
-      # Get full environment config and update variables
-      FULL_ENV=$(aws codebuild batch-get-projects \
+      # Get full environment config and update variables, writing to temp file
+      # to avoid shell escaping issues with complex JSON
+      TEMP_FILE=$(mktemp)
+      aws codebuild batch-get-projects \
         --names "$PROJECT_NAME" \
         --query 'projects[0].environment' \
-        --output json | jq --argjson envVars "$NEW_ENV" '.environmentVariables = $envVars')
+        --output json | jq --argjson envVars "$NEW_ENV" '.environmentVariables = $envVars' > "$TEMP_FILE"
 
-      # Update the CodeBuild project
+      # Update the CodeBuild project using file input
       aws codebuild update-project \
         --name "$PROJECT_NAME" \
-        --environment "$FULL_ENV"
+        --environment "file://$TEMP_FILE"
 
+      rm -f "$TEMP_FILE"
       echo "Successfully added ACCELERATOR_LAMBDA_CONCURRENCY_LIMIT=$CONCURRENCY to $PROJECT_NAME"
     EOT
   }
