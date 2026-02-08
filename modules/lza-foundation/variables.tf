@@ -44,9 +44,9 @@ variable "accelerator_prefix" {
 }
 
 variable "control_tower_enabled" {
-  description = "Whether AWS Control Tower is enabled in this account"
+  description = "Set to true to use Control Tower with LZA (recommended). LZA will integrate with existing Control Tower or set it up if needed. Set to false for Organizations-only mode (you must first set up mandatory accounts: LogArchive, Audit)."
   type        = bool
-  default     = false
+  default     = true
 }
 
 

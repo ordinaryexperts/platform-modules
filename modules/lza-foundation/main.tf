@@ -88,6 +88,10 @@ resource "aws_cloudformation_stack" "lza_installer" {
 # Update the Toolkit CodeBuild project with Lambda concurrency limit
 # This bypasses the Lambda concurrent execution validation that fails on new accounts
 # See: https://github.com/awslabs/landing-zone-accelerator-on-aws/issues/984
+#
+# IMPORTANT: The LZA Pipeline creates the ToolkitProject AFTER the Installer stack completes.
+# We must wait for the Pipeline to finish its initial run before modifying the project,
+# otherwise the Pipeline will overwrite our changes.
 resource "null_resource" "toolkit_lambda_concurrency" {
   count = var.lambda_concurrency_limit > 0 ? 1 : 0
 
@@ -100,11 +104,54 @@ resource "null_resource" "toolkit_lambda_concurrency" {
     environment = {
       AWS_REGION     = data.aws_region.current.name
       PROJECT_NAME   = "${var.accelerator_prefix}-ToolkitProject"
+      PIPELINE_NAME  = "${var.accelerator_prefix}-Pipeline"
       CONCURRENCY    = var.lambda_concurrency_limit
     }
 
     command = <<-EOT
       set -e
+
+      echo "Waiting for LZA Pipeline to create ToolkitProject..."
+
+      # Wait for the ToolkitProject to exist (max 10 minutes)
+      MAX_WAIT=600
+      WAITED=0
+      while [ $WAITED -lt $MAX_WAIT ]; do
+        if aws codebuild batch-get-projects --names "$PROJECT_NAME" --query 'projects[0].name' --output text 2>/dev/null | grep -q "$PROJECT_NAME"; then
+          echo "ToolkitProject found after ${WAITED}s"
+          break
+        fi
+        echo "Waiting for ToolkitProject to be created... (${WAITED}s)"
+        sleep 30
+        WAITED=$((WAITED + 30))
+      done
+
+      if [ $WAITED -ge $MAX_WAIT ]; then
+        echo "ERROR: ToolkitProject not found after ${MAX_WAIT}s"
+        exit 1
+      fi
+
+      # Wait for the Pipeline to not be in progress (max 30 minutes)
+      # The Pipeline runs automatically after the Installer stack and creates/updates ToolkitProject
+      echo "Waiting for LZA Pipeline to stabilize..."
+      MAX_PIPELINE_WAIT=1800
+      WAITED=0
+      while [ $WAITED -lt $MAX_PIPELINE_WAIT ]; do
+        PIPELINE_STATE=$(aws codepipeline get-pipeline-state --name "$PIPELINE_NAME" \
+          --query 'stageStates[0].latestExecution.status' --output text 2>/dev/null || echo "Unknown")
+
+        if [ "$PIPELINE_STATE" = "Succeeded" ] || [ "$PIPELINE_STATE" = "Failed" ] || [ "$PIPELINE_STATE" = "Unknown" ]; then
+          echo "Pipeline state: $PIPELINE_STATE - proceeding with update"
+          break
+        fi
+
+        echo "Pipeline is $PIPELINE_STATE, waiting... (${WAITED}s)"
+        sleep 60
+        WAITED=$((WAITED + 60))
+      done
+
+      # Now update the ToolkitProject with the concurrency limit
+      echo "Updating ToolkitProject with ACCELERATOR_LAMBDA_CONCURRENCY_LIMIT=$CONCURRENCY"
 
       # Get current environment variables from the Toolkit project
       CURRENT_ENV=$(aws codebuild batch-get-projects \
@@ -112,12 +159,16 @@ resource "null_resource" "toolkit_lambda_concurrency" {
         --query 'projects[0].environment.environmentVariables' \
         --output json)
 
+      # Handle null or empty environment variables
+      if [ "$CURRENT_ENV" = "null" ] || [ -z "$CURRENT_ENV" ]; then
+        CURRENT_ENV="[]"
+      fi
+
       # Add the concurrency limit variable (unique_by prevents duplicates)
       NEW_ENV=$(echo "$CURRENT_ENV" | jq --arg limit "$CONCURRENCY" \
         '. + [{"name": "ACCELERATOR_LAMBDA_CONCURRENCY_LIMIT", "value": $limit, "type": "PLAINTEXT"}] | unique_by(.name)')
 
       # Get full environment config and update variables, writing to temp file
-      # to avoid shell escaping issues with complex JSON
       TEMP_FILE=$(mktemp)
       aws codebuild batch-get-projects \
         --names "$PROJECT_NAME" \
