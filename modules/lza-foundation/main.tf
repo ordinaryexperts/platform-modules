@@ -102,10 +102,10 @@ resource "null_resource" "toolkit_lambda_concurrency" {
 
   provisioner "local-exec" {
     environment = {
-      AWS_REGION     = data.aws_region.current.name
-      PROJECT_NAME   = "${var.accelerator_prefix}-ToolkitProject"
-      PIPELINE_NAME  = "${var.accelerator_prefix}-Pipeline"
-      CONCURRENCY    = var.lambda_concurrency_limit
+      AWS_REGION    = data.aws_region.current.name
+      PROJECT_NAME  = "${var.accelerator_prefix}-ToolkitProject"
+      PIPELINE_NAME = "${var.accelerator_prefix}-Pipeline"
+      CONCURRENCY   = var.lambda_concurrency_limit
     }
 
     command = <<-EOT
@@ -118,16 +118,16 @@ resource "null_resource" "toolkit_lambda_concurrency" {
       WAITED=0
       while [ $WAITED -lt $MAX_WAIT ]; do
         if aws codebuild batch-get-projects --names "$PROJECT_NAME" --query 'projects[0].name' --output text 2>/dev/null | grep -q "$PROJECT_NAME"; then
-          echo "ToolkitProject found after ${WAITED}s"
+          echo "ToolkitProject found after $${WAITED}s"
           break
         fi
-        echo "Waiting for ToolkitProject to be created... (${WAITED}s)"
+        echo "Waiting for ToolkitProject to be created... ($${WAITED}s)"
         sleep 30
         WAITED=$((WAITED + 30))
       done
 
       if [ $WAITED -ge $MAX_WAIT ]; then
-        echo "ERROR: ToolkitProject not found after ${MAX_WAIT}s"
+        echo "ERROR: ToolkitProject not found after $${MAX_WAIT}s"
         exit 1
       fi
 
@@ -145,7 +145,7 @@ resource "null_resource" "toolkit_lambda_concurrency" {
           break
         fi
 
-        echo "Pipeline is $PIPELINE_STATE, waiting... (${WAITED}s)"
+        echo "Pipeline is $PIPELINE_STATE, waiting... ($${WAITED}s)"
         sleep 60
         WAITED=$((WAITED + 60))
       done
