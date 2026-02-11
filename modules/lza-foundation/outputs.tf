@@ -45,3 +45,13 @@ output "config_bucket_key" {
   value       = "zipped/aws-accelerator-config.zip"
 }
 
+output "pipeline_poller_user_arn" {
+  description = "ARN of the IAM user for GitHub Actions pipeline polling"
+  value       = aws_iam_user.pipeline_poller.arn
+}
+
+output "pipeline_poller_user_name" {
+  description = "Name of the IAM user for GitHub Actions pipeline polling (for creating access keys)"
+  value       = aws_iam_user.pipeline_poller.name
+}
+

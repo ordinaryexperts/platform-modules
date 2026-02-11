@@ -204,3 +204,35 @@ resource "aws_ssm_parameter" "lza_config" {
 
   tags = local.tags
 }
+
+# IAM user for GitHub Actions to poll pipeline status during long-running deployments.
+# OIDC tokens expire after ~1 hour, but LZA pipelines can take 1.5-2+ hours.
+# This user has minimal read-only permissions for polling only.
+#
+# Access keys are NOT created here - staff generates them via AWS Console
+# and stores them in the lza-config repo's GitHub secrets.
+resource "aws_iam_user" "pipeline_poller" {
+  name = "${var.accelerator_prefix}-pipeline-poller"
+  path = "/lza/"
+
+  tags = merge(local.tags, {
+    Purpose = "GitHub Actions pipeline status polling"
+  })
+}
+
+resource "aws_iam_user_policy" "pipeline_poller" {
+  name = "pipeline-poll-only"
+  user = aws_iam_user.pipeline_poller.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AllowPipelineStatusPolling"
+        Effect   = "Allow"
+        Action   = "codepipeline:GetPipelineExecution"
+        Resource = "arn:aws:codepipeline:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${var.accelerator_prefix}-Pipeline"
+      }
+    ]
+  })
+}
