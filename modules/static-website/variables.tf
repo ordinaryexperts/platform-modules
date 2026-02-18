@@ -1,0 +1,106 @@
+variable "name" {
+  description = "Name for the website resources (used in bucket names, SSM parameters, etc.)"
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.name))
+    error_message = "Name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "environment" {
+  description = "Environment name (e.g., dev1, stage1, prod1)"
+  type        = string
+}
+
+variable "domain" {
+  description = "Domain name for the website (e.g., www.example.com)"
+  type        = string
+}
+
+variable "certificate_arn" {
+  description = "ACM certificate ARN for HTTPS. Must be in us-east-1 for CloudFront."
+  type        = string
+}
+
+variable "artifact_bucket_arn" {
+  description = "ARN of the S3 bucket containing build artifacts in SharedServices account"
+  type        = string
+  default     = null
+}
+
+variable "tags" {
+  description = "Tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+# Optional features
+
+variable "waf_acl_arn" {
+  description = "WAF Web ACL ARN to attach to CloudFront distribution"
+  type        = string
+  default     = null
+}
+
+variable "price_class" {
+  description = "CloudFront price class. Options: PriceClass_100 (US/EU), PriceClass_200 (US/EU/Asia), PriceClass_All"
+  type        = string
+  default     = "PriceClass_100"
+
+  validation {
+    condition     = contains(["PriceClass_100", "PriceClass_200", "PriceClass_All"], var.price_class)
+    error_message = "Price class must be one of: PriceClass_100, PriceClass_200, PriceClass_All."
+  }
+}
+
+variable "custom_error_responses" {
+  description = "Custom error response configurations for SPA support"
+  type = list(object({
+    error_code         = number
+    response_code      = number
+    response_page_path = string
+  }))
+  default = [
+    {
+      error_code         = 404
+      response_code      = 200
+      response_page_path = "/index.html"
+    },
+    {
+      error_code         = 403
+      response_code      = 200
+      response_page_path = "/index.html"
+    }
+  ]
+}
+
+variable "default_root_object" {
+  description = "Default root object (index file)"
+  type        = string
+  default     = "index.html"
+}
+
+variable "enable_logging" {
+  description = "Enable CloudFront access logging"
+  type        = bool
+  default     = false
+}
+
+variable "logging_bucket" {
+  description = "S3 bucket for CloudFront access logs (required if enable_logging is true)"
+  type        = string
+  default     = null
+}
+
+variable "logging_prefix" {
+  description = "Prefix for CloudFront access logs"
+  type        = string
+  default     = "cloudfront/"
+}
+
+variable "minimum_protocol_version" {
+  description = "Minimum TLS protocol version for CloudFront"
+  type        = string
+  default     = "TLSv1.2_2021"
+}

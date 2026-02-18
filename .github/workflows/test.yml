@@ -1,0 +1,125 @@
+# .github/workflows/test.yml
+#
+# Runs validation on all modules and integration tests on changed modules.
+
+name: Test Modules
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Specific module to test (leave empty for changed modules only)'
+        required: false
+        type: string
+
+concurrency:
+  group: test-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.changes.outputs.modules }}
+      has_changes: ${{ steps.changes.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed modules
+        id: changes
+        run: |
+          if [[ -n "${{ inputs.module }}" ]]; then
+            echo "modules=[\"${{ inputs.module }}\"]" >> "$GITHUB_OUTPUT"
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            ./scripts/detect-changed-modules.sh
+          fi
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.6.0
+
+      - name: Check formatting
+        run: tofu fmt -check -recursive
+
+      - name: Validate all modules
+        run: |
+          for dir in modules/*/; do
+            module=$(basename "$dir")
+            echo "::group::Validating $module"
+            tofu -chdir="$dir" init -backend=false
+            tofu -chdir="$dir" validate
+            echo "::endgroup::"
+          done
+
+  integration:
+    needs: [detect-changes, validate]
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.detect-changes.outputs.modules) }}
+      fail-fast: false
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.6.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TEST_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Run integration tests
+        run: |
+          echo "::group::Testing ${{ matrix.module }}"
+          cd modules/${{ matrix.module }}
+          tofu init
+          tofu test -verbose
+          echo "::endgroup::"
+
+  # Always run lza-foundation validation (plan only, no apply)
+  validate-lza:
+    needs: [detect-changes, validate]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.6.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TEST_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Run lza-foundation validation tests
+        run: |
+          cd modules/lza-foundation
+          tofu init
+          tofu test -verbose

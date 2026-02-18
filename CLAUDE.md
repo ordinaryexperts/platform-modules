@@ -136,6 +136,39 @@ tofu fmt -recursive
 tofu validate  # In each module directory
 ```
 
+## Testing
+
+### Running Tests Locally
+
+Before committing module changes, run integration tests:
+
+```bash
+cd modules/<module-name>
+tofu init
+tofu test -verbose
+```
+
+### Test Structure
+
+Each module has a `tests/` directory with:
+- `basic.tftest.hcl` - Integration tests
+- `fixtures/` - Helper module to read test fixtures from SSM
+
+### Test Fixtures
+
+Shared test resources are deployed to platform-dev and stored in SSM under `/platform-test/`:
+- `/platform-test/organization-path` - AWS Organizations path
+- `/platform-test/static-website/certificate-arn` - ACM certificate
+- `/platform-test/lza-foundation/github-oidc-provider-arn` - GitHub OIDC provider
+
+To update fixtures: `cd test-fixtures && tofu apply`
+
+### CI Behavior
+
+- **Validation**: Runs on all modules (format check + validate)
+- **Integration**: Runs only on changed modules
+- **lza-foundation**: Validation only (plan, no apply) due to 60-90min deploy time
+
 ## Reference
 
 Modules are sourced by clients using path-based version tags:
