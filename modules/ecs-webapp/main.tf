@@ -11,8 +11,7 @@ data "aws_region" "current" {}
 
 locals {
   name_prefix = "${var.name}-${var.environment}"
-  fqdn        = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
-  app_url     = "https://${local.fqdn}"
+  app_url     = "https://${var.domain_name}"
 
   # Derive postgres major version from full version for parameter group family
   postgres_major_version = regex("^(\\d+)", var.postgres_version)[0]

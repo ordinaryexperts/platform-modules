@@ -1,11 +1,23 @@
 # =============================================================================
 # SES Domain Identity (conditional on enable_ses)
+# Requires domain_name and route53_zone_id to be set.
 # =============================================================================
 
 resource "aws_ses_domain_identity" "main" {
   count = var.enable_ses ? 1 : 0
 
   domain = var.domain_name
+
+  lifecycle {
+    precondition {
+      condition     = var.domain_name != ""
+      error_message = "domain_name is required when enable_ses is true."
+    }
+    precondition {
+      condition     = var.route53_zone_id != ""
+      error_message = "route53_zone_id is required when enable_ses is true."
+    }
+  }
 }
 
 # Domain Verification

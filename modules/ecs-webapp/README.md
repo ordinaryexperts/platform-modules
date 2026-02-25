@@ -7,7 +7,8 @@ Designed for use with client accounts that already have VPCs provisioned (e.g., 
 ## Features
 
 - ECS Fargate cluster with app service and ALB
-- ACM certificate with DNS validation
+- HTTPS with pre-provisioned ACM certificate and Route53 DNS
+- Optional vanity domain via SNI certificate
 - Auto-scaling (CPU and memory target tracking)
 - CloudWatch log groups and alarms
 - SNS alerts topic
@@ -31,19 +32,18 @@ Designed for use with client accounts that already have VPCs provisioned (e.g., 
 
 ```hcl
 module "webapp" {
-  source = "github.com/ordinaryexperts/platform-modules//modules/ecs-webapp?ref=ecs-webapp-v1.0.0"
+  source = "github.com/ordinaryexperts/platform-modules//modules/ecs-webapp?ref=ecs-webapp-v2.0.0"
 
-  name               = "my-app"
-  environment        = "dev1"
-  vpc_id             = "vpc-abc123"
-  public_subnet_ids  = ["subnet-pub1", "subnet-pub2"]
-  private_subnet_ids = ["subnet-priv1", "subnet-priv2"]
-  ecr_repository_url = "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-app"
-  domain_name        = "example.com"
-  subdomain          = "app"
-  route53_zone_id    = "Z1234567890"
+  name                = "my-app"
+  environment         = "dev1"
+  vpc_id              = "vpc-abc123"
+  public_subnet_ids   = ["subnet-pub1", "subnet-pub2"]
+  private_subnet_ids  = ["subnet-priv1", "subnet-priv2"]
+  ecr_repository_url  = "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-app"
+  domain_name         = "my-app-dev1-us-east-1.dev.example.net"
+  route53_zone_id     = "Z1234567890"
+  acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abc-123"
 
-  # RDS enabled by default - provide database subnets
   database_subnet_ids = ["subnet-db1", "subnet-db2"]
 }
 ```
@@ -52,17 +52,20 @@ module "webapp" {
 
 ```hcl
 module "webapp" {
-  source = "github.com/ordinaryexperts/platform-modules//modules/ecs-webapp?ref=ecs-webapp-v1.0.0"
+  source = "github.com/ordinaryexperts/platform-modules//modules/ecs-webapp?ref=ecs-webapp-v2.0.0"
 
-  name               = "my-app"
-  environment        = "prod1"
-  vpc_id             = "vpc-abc123"
-  public_subnet_ids  = ["subnet-pub1", "subnet-pub2"]
-  private_subnet_ids = ["subnet-priv1", "subnet-priv2"]
-  ecr_repository_url = "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-app"
-  domain_name        = "example.com"
-  subdomain          = "app"
-  route53_zone_id    = "Z1234567890"
+  name                = "my-app"
+  environment         = "prod1"
+  vpc_id              = "vpc-abc123"
+  public_subnet_ids   = ["subnet-pub1", "subnet-pub2"]
+  private_subnet_ids  = ["subnet-priv1", "subnet-priv2"]
+  ecr_repository_url  = "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-app"
+  domain_name         = "my-app-prod1-us-east-1.prod.example.net"
+  route53_zone_id     = "Z1234567890"
+  acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abc-123"
+
+  # Optional vanity domain
+  vanity_acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/vanity-456"
 
   # ECS
   task_cpu      = 1024
@@ -160,10 +163,11 @@ The module creates an SSM parameter for the container image tag (`/{name}-{envir
 | `public_subnet_ids` | Public subnet IDs for ALB (min 2) | `list(string)` | | yes |
 | `private_subnet_ids` | Private subnet IDs for ECS tasks | `list(string)` | | yes |
 | `ecr_repository_url` | ECR repository URL (without tag) | `string` | | yes |
-| `domain_name` | Base domain name | `string` | | yes |
-| `route53_zone_id` | Route53 hosted zone ID | `string` | | yes |
+| `domain_name` | FQDN for the service (e.g., `app-dev1-us-east-1.dev.example.net`) | `string` | | yes |
+| `route53_zone_id` | Route53 hosted zone ID for DNS records | `string` | | yes |
+| `acm_certificate_arn` | Pre-provisioned ACM certificate ARN covering `domain_name` | `string` | | yes |
+| `vanity_acm_certificate_arn` | ACM cert ARN for vanity domain (SNI) | `string` | `""` | no |
 | `environment` | Environment name | `string` | `"dev"` | no |
-| `subdomain` | Subdomain prefix | `string` | `""` | no |
 | `container_port` | Container port | `number` | `3000` | no |
 | `health_check_path` | Health check path | `string` | `"/up"` | no |
 | `task_cpu` | App task CPU units | `number` | `512` | no |
@@ -210,7 +214,7 @@ The module creates an SSM parameter for the container image tag (`/{name}-{envir
 | `ecs_service_name` | App service name |
 | `alb_dns_name` | ALB DNS name |
 | `alb_arn` | ALB ARN |
-| `app_url` | Full HTTPS application URL |
+| `app_url` | Application URL (HTTPS) |
 | `container_image_tag_parameter_name` | SSM parameter for image tag |
 | `task_execution_role_arn` | Execution role ARN |
 | `task_role_arn` | Task role ARN |

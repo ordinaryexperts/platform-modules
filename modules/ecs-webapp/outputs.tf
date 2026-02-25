@@ -28,7 +28,7 @@ output "alb_arn" {
 }
 
 output "app_url" {
-  description = "Full HTTPS URL of the application"
+  description = "Application URL (HTTPS)"
   value       = local.app_url
 }
 

@@ -52,7 +52,7 @@ resource "aws_lb_target_group" "app" {
 # Listeners
 # =============================================================================
 
-# HTTP → HTTPS redirect
+# HTTP listener: always redirects to HTTPS
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"
@@ -73,13 +73,13 @@ resource "aws_lb_listener" "http" {
   })
 }
 
-# HTTPS listener
+# HTTPS listener: uses pre-provisioned ACM certificate
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = var.ssl_policy
-  certificate_arn   = aws_acm_certificate_validation.main.certificate_arn
+  certificate_arn   = var.acm_certificate_arn
 
   default_action {
     type             = "forward"
@@ -92,46 +92,13 @@ resource "aws_lb_listener" "https" {
 }
 
 # =============================================================================
-# ACM Certificate
+# Vanity SNI Certificate (added when vanity_acm_certificate_arn is provided)
 # =============================================================================
 
-resource "aws_acm_certificate" "main" {
-  domain_name       = local.fqdn
-  validation_method = "DNS"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-cert"
-  })
-}
-
-resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.main.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = var.route53_zone_id
-}
-
-resource "aws_acm_certificate_validation" "main" {
-  certificate_arn         = aws_acm_certificate.main.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
-
-  timeouts {
-    create = "5m"
-  }
+resource "aws_lb_listener_certificate" "vanity" {
+  count           = var.vanity_acm_certificate_arn != "" ? 1 : 0
+  listener_arn    = aws_lb_listener.https.arn
+  certificate_arn = var.vanity_acm_certificate_arn
 }
 
 # =============================================================================
@@ -140,7 +107,7 @@ resource "aws_acm_certificate_validation" "main" {
 
 resource "aws_route53_record" "app" {
   zone_id = var.route53_zone_id
-  name    = local.fqdn
+  name    = var.domain_name
   type    = "A"
 
   alias {

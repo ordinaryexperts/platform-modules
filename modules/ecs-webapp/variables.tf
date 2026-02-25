@@ -47,14 +47,29 @@ variable "ecr_repository_url" {
   type        = string
 }
 
+# =============================================================================
+# Domain & DNS
+# =============================================================================
+
 variable "domain_name" {
-  description = "Base domain name (e.g., example.com)"
+  description = "Base domain name for HTTPS and DNS (e.g., example.com)"
   type        = string
 }
 
 variable "route53_zone_id" {
   description = "Route53 hosted zone ID for DNS records"
   type        = string
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of a pre-provisioned ACM certificate for HTTPS. Must cover var.domain_name."
+  type        = string
+}
+
+variable "vanity_acm_certificate_arn" {
+  description = "ACM cert ARN for vanity domain. Attached as additional SNI cert on ALB listener."
+  type        = string
+  default     = ""
 }
 
 # =============================================================================
@@ -65,12 +80,6 @@ variable "environment" {
   description = "Environment name (e.g., dev1, stage1, prod1)"
   type        = string
   default     = "dev"
-}
-
-variable "subdomain" {
-  description = "Subdomain prefix (empty string uses bare domain)"
-  type        = string
-  default     = ""
 }
 
 variable "container_port" {
@@ -190,7 +199,7 @@ variable "enable_worker" {
 }
 
 variable "enable_ses" {
-  description = "Create SES domain identity for sending email"
+  description = "Create SES domain identity for sending email (requires domain_name to be set)"
   type        = bool
   default     = false
 }
