@@ -24,6 +24,14 @@ resource "aws_ecr_repository" "this" {
   name                 = var.name
   image_tag_mutability = var.image_tag_mutability
 
+  dynamic "image_tag_mutability_exclusion_filter" {
+    for_each = var.image_tag_mutability == "IMMUTABLE_WITH_EXCLUSION" ? var.mutable_tag_patterns : []
+    content {
+      filter      = image_tag_mutability_exclusion_filter.value
+      filter_type = "WILDCARD"
+    }
+  }
+
   image_scanning_configuration {
     scan_on_push = var.scan_on_push
   }
@@ -66,6 +74,33 @@ resource "aws_ecr_repository_policy" "cross_account" {
             "aws:PrincipalOrgPaths" = ["${var.organization_path}/*"]
           }
         }
+      }
+    ]
+  })
+}
+
+# =============================================================================
+# Cross-Account Pull Policy (explicit account IDs)
+# =============================================================================
+
+resource "aws_ecr_repository_policy" "allowed_accounts" {
+  count      = length(var.allowed_account_ids) > 0 && var.organization_path == null ? 1 : 0
+  repository = aws_ecr_repository.this.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCrossAccountPull"
+        Effect = "Allow"
+        Principal = {
+          AWS = [for id in var.allowed_account_ids : "arn:aws:iam::${id}:root"]
+        }
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
       }
     ]
   })

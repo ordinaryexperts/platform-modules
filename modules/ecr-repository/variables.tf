@@ -9,14 +9,20 @@ variable "name" {
 }
 
 variable "image_tag_mutability" {
-  description = "Tag mutability setting. MUTABLE allows overwriting tags, IMMUTABLE prevents it."
+  description = "Tag mutability setting. MUTABLE allows overwriting tags, IMMUTABLE prevents it, IMMUTABLE_WITH_EXCLUSION allows specific tag patterns to be overwritten."
   type        = string
-  default     = "MUTABLE"
+  default     = "IMMUTABLE_WITH_EXCLUSION"
 
   validation {
-    condition     = contains(["MUTABLE", "IMMUTABLE"], var.image_tag_mutability)
-    error_message = "Image tag mutability must be MUTABLE or IMMUTABLE."
+    condition     = contains(["MUTABLE", "IMMUTABLE", "IMMUTABLE_WITH_EXCLUSION"], var.image_tag_mutability)
+    error_message = "Image tag mutability must be MUTABLE, IMMUTABLE, or IMMUTABLE_WITH_EXCLUSION."
   }
+}
+
+variable "mutable_tag_patterns" {
+  description = "Tag patterns excluded from immutability when using IMMUTABLE_WITH_EXCLUSION (supports wildcards). Ignored for other mutability settings."
+  type        = list(string)
+  default     = ["latest"]
 }
 
 variable "scan_on_push" {
@@ -46,6 +52,12 @@ variable "organization_path" {
   description = "AWS Organizations path for cross-account pull policy (e.g., o-abc123/r-root/ou-workloads)"
   type        = string
   default     = null
+}
+
+variable "allowed_account_ids" {
+  description = "List of AWS account IDs allowed to pull images. Used as an alternative to organization_path for explicit cross-account access."
+  type        = list(string)
+  default     = []
 }
 
 variable "enable_lifecycle_policy" {
