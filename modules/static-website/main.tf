@@ -112,6 +112,42 @@ resource "aws_s3_bucket_policy" "website" {
 }
 
 # =============================================================================
+# CloudFront Function for URL Rewriting
+# =============================================================================
+#
+# Rewrites directory requests to index.html for multi-page static sites.
+# e.g., /about/ → /about/index.html, /about → /about/index.html
+# Requests with file extensions are passed through unchanged.
+#
+
+resource "aws_cloudfront_function" "url_rewrite" {
+  name    = "${var.name}-${var.environment}-url-rewrite"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrite directory URLs to index.html for ${var.name} ${var.environment}"
+  publish = true
+  code    = <<-EOF
+function handler(event) {
+  var request = event.request;
+  var uri = request.uri;
+
+  // If URI has a file extension, pass through unchanged
+  if (uri.includes('.')) {
+    return request;
+  }
+
+  // Append /index.html for directory paths
+  if (uri.endsWith('/')) {
+    request.uri = uri + 'index.html';
+  } else {
+    request.uri = uri + '/index.html';
+  }
+
+  return request;
+}
+EOF
+}
+
+# =============================================================================
 # CloudFront Distribution
 # =============================================================================
 
@@ -143,6 +179,11 @@ resource "aws_cloudfront_distribution" "website" {
 
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.url_rewrite.arn
+    }
 
     # Cache settings for static assets
     min_ttl     = 0

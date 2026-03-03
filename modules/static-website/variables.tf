@@ -55,24 +55,13 @@ variable "price_class" {
 }
 
 variable "custom_error_responses" {
-  description = "Custom error response configurations for SPA support"
+  description = "Custom error response configurations. Default returns 404 for missing pages. For SPAs, override with response_code=200 and response_page_path='/index.html'."
   type = list(object({
     error_code         = number
     response_code      = number
     response_page_path = string
   }))
-  default = [
-    {
-      error_code         = 404
-      response_code      = 200
-      response_page_path = "/index.html"
-    },
-    {
-      error_code         = 403
-      response_code      = 200
-      response_page_path = "/index.html"
-    }
-  ]
+  default = []
 }
 
 variable "default_root_object" {
