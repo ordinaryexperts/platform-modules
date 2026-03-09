@@ -7,37 +7,71 @@ Vetted OpenTofu/Terraform modules for [OE Platform](https://github.com/ordinarye
 Reference modules from client config repositories:
 
 ```hcl
-module "bucket" {
-  source = "github.com/ordinaryexperts/platform-modules//modules/s3-bucket?ref=s3-bucket/v1.0.0"
+module "website" {
+  source = "github.com/ordinaryexperts/platform-modules//modules/static-website?ref=static-website-v1.3.0"
 
-  bucket_name = "my-app-data"
-  # ...
+  name            = "my-app"
+  environment     = "prod1"
+  domain          = "www.example.com"
+  certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abc123"
 }
 ```
 
 ## Available Modules
 
-See the [modules/](./modules) directory for all available modules.
+| Module | Category | Description |
+|--------|----------|-------------|
+| [artifact-bucket](./modules/artifact-bucket) | Storage | S3 bucket for build artifacts with cross-account access |
+| [ecr-repository](./modules/ecr-repository) | Storage | ECR repository with cross-account pull and lifecycle cleanup |
+| [ecs-webapp](./modules/ecs-webapp) | Compute | ECS Fargate app with ALB, optional RDS, Redis, S3, worker, SES |
+| [lza-foundation](./modules/lza-foundation) | Landing Zone | AWS Landing Zone Accelerator foundation and Platform integration |
+| [shared-services](./modules/shared-services) | Storage | Combined ECR + artifact bucket for SharedServices account |
+| [static-website](./modules/static-website) | Compute | S3 + CloudFront static website with OAC and custom domains |
 
 Each module includes:
 - `README.md` - Usage documentation and examples
+- `module.json` - Module metadata (synced to OE Platform)
 - `variables.tf` - Input variables with descriptions
 - `outputs.tf` - Output values
 - `main.tf` - Resource definitions
 - `versions.tf` - Provider version constraints
 
+## module.json
+
+Each module has a `module.json` that defines metadata synced to OE Platform for the module catalog and AI agent context:
+
+```json
+{
+  "display_name": "Static Website",
+  "description": "S3 + CloudFront static website with Origin Access Control",
+  "category": "compute",
+  "deployment_type": "s3_artifact",
+  "well_architected": ["security", "performance_efficiency", "cost_optimization"],
+  "features": ["cloudfront", "oac", "custom_domain", "https", "spa_support"]
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `display_name` | Yes | Human-readable name |
+| `description` | Yes | One-line description of what the module does |
+| `category` | Yes | One of: `storage`, `networking`, `compute`, `security`, `database`, `observability`, `iam`, `landing_zone`, `application` |
+| `deployment_type` | No | `"container"` or `"s3_artifact"` if the module supports app code deployment |
+| `well_architected` | No | AWS Well-Architected pillars this module addresses |
+| `features` | No | List of features/capabilities for AI agent context |
+
 ## Versioning
 
-Modules are versioned independently using **path-based git tags** following [Semantic Versioning](https://semver.org/):
+Modules are versioned independently using git tags following [Semantic Versioning](https://semver.org/):
 
 ```
-<module-name>/v<major>.<minor>.<patch>
+<module-name>-v<major>.<minor>.<patch>
 ```
 
 Examples:
-- `s3-bucket/v1.0.0`
-- `vpc/v2.1.0`
-- `rds-postgres/v1.0.3`
+- `static-website-v1.3.0`
+- `ecs-webapp-v2.0.0`
+- `shared-services-v1.1.0`
 
 ### Version Guidelines
 
@@ -54,7 +88,7 @@ main           <-- trunk (always deployable)
   ^
 feature/*      <-- short-lived feature branches
   |
-  +-- tags     <-- module-name/v1.0.0 (release points)
+  +-- tags     <-- module-name-v1.0.0 (release points)
 ```
 
 ### Workflow
@@ -80,9 +114,11 @@ feature/*      <-- short-lived feature branches
    ```bash
    git checkout main
    git pull origin main
-   git tag -a "s3-bucket/v1.0.0" -m "s3-bucket v1.0.0: Initial release"
-   git push origin "s3-bucket/v1.0.0"
+   git tag -a "static-website-v1.4.0" -m "static-website v1.4.0: Add WAF support"
+   git push origin "static-website-v1.4.0"
    ```
+
+   This triggers the release workflow which notifies OE Platform to update the module catalog.
 
 **Key principles:**
 - Keep feature branches short-lived (hours to days, not weeks)
@@ -96,6 +132,7 @@ feature/*      <-- short-lived feature branches
 All modules must include:
 
 - [ ] `README.md` with usage example
+- [ ] `module.json` with metadata
 - [ ] All variables have `description` and `type`
 - [ ] All outputs have `description`
 - [ ] `versions.tf` with provider constraints

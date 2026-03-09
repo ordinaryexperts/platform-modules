@@ -8,12 +8,15 @@ This repository contains vetted OpenTofu/Terraform modules maintained by Ordinar
 platform-modules/
 ├── modules/
 │   ├── <module-name>/
-│   │   ├── README.md        # Usage documentation
-│   │   ├── main.tf          # Resource definitions
-│   │   ├── variables.tf     # Input variables
-│   │   ├── outputs.tf       # Output values
-│   │   └── versions.tf      # Provider constraints
+│   │   ├── module.json       # Module metadata (synced to Platform)
+│   │   ├── README.md         # Usage documentation
+│   │   ├── main.tf           # Resource definitions
+│   │   ├── variables.tf      # Input variables
+│   │   ├── outputs.tf        # Output values
+│   │   └── versions.tf       # Provider constraints
 │   └── ...
+├── test-fixtures/             # Shared test infrastructure (platform-dev)
+└── scripts/                   # CI/CD and utility scripts
 ```
 
 ## Module Standards
@@ -28,6 +31,30 @@ Every module MUST have:
 - `outputs.tf` - All output values
 - `versions.tf` - Terraform and provider version constraints
 - `README.md` - Documentation with usage example
+- `module.json` - Module metadata for Platform catalog
+
+### module.json
+
+Every module MUST have a `module.json` that defines metadata synced to OE Platform:
+
+```json
+{
+  "display_name": "Module Name",
+  "description": "One-line description of what the module does",
+  "category": "compute",
+  "deployment_type": null,
+  "well_architected": ["security", "reliability"],
+  "features": ["feature1", "feature2"]
+}
+```
+
+Fields:
+- `display_name` (required) - Human-readable name
+- `description` (required) - Concise description
+- `category` (required) - One of: `storage`, `networking`, `compute`, `security`, `database`, `observability`, `iam`, `landing_zone`, `application`
+- `deployment_type` (optional) - `"container"` or `"s3_artifact"` if the module supports app code deployment, otherwise `null`
+- `well_architected` (optional) - AWS Well-Architected pillars: `security`, `reliability`, `performance_efficiency`, `cost_optimization`, `operational_excellence`, `sustainability`
+- `features` (optional) - Feature tags for AI agent context
 
 ### Variable Requirements
 
@@ -87,10 +114,10 @@ terraform {
 Modules use path-based semantic versioning with git tags:
 
 ```
-<module-name>/v<major>.<minor>.<patch>
+<module-name>-v<major>.<minor>.<patch>
 ```
 
-Examples: `s3-bucket/v1.0.0`, `vpc/v2.1.0`, `web-app/v1.3.0`
+Examples: `static-website-v1.3.0`, `ecs-webapp-v2.0.0`, `shared-services-v1.1.0`
 
 - **Major**: Breaking changes (removed/renamed variables, changed behavior)
 - **Minor**: New features (new variables, resources) - backwards compatible
@@ -108,15 +135,17 @@ Feature branches should be small and merge frequently to main.
 
 ## Releases
 
-Releases are triggered automatically when a path-based tag is pushed:
+Releases are triggered automatically when a tag is pushed:
 
 ```bash
-# Tag format: <module-name>/v<major>.<minor>.<patch>
-git tag lza-foundation/v1.0.0
-git push origin lza-foundation/v1.0.0
+# Tag format: <module-name>-v<major>.<minor>.<patch>
+git tag -a "ecs-webapp-v2.1.0" -m "ecs-webapp v2.1.0: Add Redis cluster mode"
+git push origin "ecs-webapp-v2.1.0"
 ```
 
-This creates a GitHub Release with auto-generated release notes.
+This triggers two things:
+1. A GitHub Release with auto-generated release notes
+2. A webhook to OE Platform that updates the module catalog (version, metadata from `module.json`, parsed variables/outputs)
 
 **No CHANGELOG.md file is required.** Release notes are:
 1. Auto-generated from commit messages between releases
@@ -173,9 +202,8 @@ To update fixtures: `cd test-fixtures && tofu apply`
 
 Modules are sourced by clients using path-based version tags:
 ```hcl
-# Example: Using the s3-bucket module at version 1.2.0
-module "bucket" {
-  source = "github.com/ordinaryexperts/platform-modules//modules/s3-bucket?ref=s3-bucket/v1.2.0"
+module "website" {
+  source = "github.com/ordinaryexperts/platform-modules//modules/static-website?ref=static-website-v1.3.0"
 
   # ... module variables
 }

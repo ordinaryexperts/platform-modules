@@ -1,0 +1,8 @@
+{
+  "display_name": "Artifact Bucket",
+  "description": "S3 bucket in SharedServices for storing build artifacts with cross-account read policy, versioning, encryption, and lifecycle cleanup",
+  "category": "storage",
+  "deployment_type": null,
+  "well_architected": ["security", "cost_optimization", "operational_excellence"],
+  "features": ["s3", "cross_account_access", "versioning", "encryption", "lifecycle_policy"]
+}

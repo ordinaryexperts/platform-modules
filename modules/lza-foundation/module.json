@@ -1,0 +1,8 @@
+{
+  "display_name": "LZA Foundation",
+  "description": "AWS Landing Zone Accelerator foundation module for organizational governance, security baselines, and Platform integration",
+  "category": "landing_zone",
+  "deployment_type": null,
+  "well_architected": ["security", "reliability", "operational_excellence"],
+  "features": ["lza", "iam_roles", "ssm_parameters", "cloudformation"]
+}
