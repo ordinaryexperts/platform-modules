@@ -105,3 +105,9 @@ variable "domain_alias_certificate_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "force_destroy" {
+  description = "Allow the S3 bucket to be destroyed even when it contains objects."
+  type        = bool
+  default     = false
+}

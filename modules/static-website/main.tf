@@ -32,6 +32,7 @@ locals {
 
 resource "aws_s3_bucket" "website" {
   bucket_prefix = local.bucket_prefix
+  force_destroy = var.force_destroy
 
   tags = merge(var.tags, {
     Name        = "${var.name}-${var.environment}"
