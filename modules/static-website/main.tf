@@ -153,7 +153,7 @@ resource "aws_cloudfront_distribution" "website" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = var.default_root_object
-  aliases             = [var.domain]
+  aliases             = length(var.domain_aliases) > 0 ? var.domain_aliases : [var.domain]
   price_class         = var.price_class
   web_acl_id          = var.waf_acl_arn
 
@@ -200,7 +200,7 @@ resource "aws_cloudfront_distribution" "website" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = var.certificate_arn
+    acm_certificate_arn      = length(var.domain_alias_certificate_arns) > 0 ? var.domain_alias_certificate_arns[0] : var.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = var.minimum_protocol_version
   }

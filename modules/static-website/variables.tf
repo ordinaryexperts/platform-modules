@@ -93,3 +93,15 @@ variable "minimum_protocol_version" {
   type        = string
   default     = "TLSv1.2_2021"
 }
+
+variable "domain_aliases" {
+  description = "Custom domain aliases for CloudFront. When set, replaces the default domain as CF aliases."
+  type        = list(string)
+  default     = []
+}
+
+variable "domain_alias_certificate_arns" {
+  description = "ACM certificate ARNs for domain aliases. First cert used as viewer certificate when aliases present."
+  type        = list(string)
+  default     = []
+}
