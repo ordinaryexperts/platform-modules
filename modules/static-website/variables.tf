@@ -1,11 +1,17 @@
 variable "name" {
-  description = "Name for the website resources (used in bucket names, SSM parameters, etc.)"
+  description = "Resource name prefix (e.g., 'my-website-dev1'). Used for S3 bucket, CloudFront function, and other AWS resource names. For SSM paths, set the 'application' variable separately."
   type        = string
 
   validation {
     condition     = can(regex("^[a-z0-9-]+$", var.name))
     error_message = "Name must contain only lowercase letters, numbers, and hyphens."
   }
+}
+
+variable "application" {
+  description = "Application slug for SSM parameter paths (/{application}/{environment}/...). Used by the Platform deploy workflow to look up deployment config. Defaults to name if not set."
+  type        = string
+  default     = null
 }
 
 variable "environment" {

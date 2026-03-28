@@ -22,8 +22,9 @@
 
 locals {
   bucket_prefix = "${var.name}-${var.environment}-"
-  # SSM parameter names follow Platform conventions
-  ssm_prefix = "/${var.name}/${var.environment}"
+  # SSM parameter names follow Platform conventions: /{application_slug}/{environment}
+  # Use application variable if set, otherwise fall back to name
+  ssm_prefix = "/${coalesce(var.application, var.name)}/${var.environment}"
 }
 
 # =============================================================================
