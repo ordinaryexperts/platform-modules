@@ -84,24 +84,25 @@ resource "aws_ecr_lifecycle_policy" "this" {
 
   policy = jsonencode({
     rules = concat(
-      [
+      # Per-app rules: keep latest N tagged images per app prefix
+      # Images are tagged as {app-slug}-{sha}, so prefix filtering works
+      [for i, slug in var.application_slugs : {
+        rulePriority = i + 1
+        description  = "Keep latest ${var.ecr_max_images_per_app} images for ${slug}"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["${slug}-"]
+          countType     = "imageCountMoreThan"
+          countNumber   = var.ecr_max_images_per_app
+        }
+        action = {
+          type = "expire"
+        }
+      }],
+      # Global max image count (when no per-app rules)
+      length(var.application_slugs) == 0 && var.ecr_max_image_count > 0 ? [
         {
           rulePriority = 1
-          description  = "Remove untagged images after ${var.ecr_untagged_image_expiry_days} days"
-          selection = {
-            tagStatus   = "untagged"
-            countType   = "sinceImagePushed"
-            countUnit   = "days"
-            countNumber = var.ecr_untagged_image_expiry_days
-          }
-          action = {
-            type = "expire"
-          }
-        }
-      ],
-      var.ecr_max_image_count > 0 ? [
-        {
-          rulePriority = 2
           description  = "Keep only ${var.ecr_max_image_count} most recent tagged images"
           selection = {
             tagStatus     = "tagged"
@@ -113,7 +114,23 @@ resource "aws_ecr_lifecycle_policy" "this" {
             type = "expire"
           }
         }
-      ] : []
+      ] : [],
+      # Cleanup untagged images (always last rule)
+      [
+        {
+          rulePriority = length(var.application_slugs) > 0 ? length(var.application_slugs) + 1 : (var.ecr_max_image_count > 0 ? 2 : 1)
+          description  = "Remove untagged images after ${var.ecr_untagged_image_expiry_days} days"
+          selection = {
+            tagStatus   = "untagged"
+            countType   = "sinceImagePushed"
+            countUnit   = "days"
+            countNumber = var.ecr_untagged_image_expiry_days
+          }
+          action = {
+            type = "expire"
+          }
+        }
+      ]
     )
   })
 }

@@ -92,9 +92,21 @@ variable "ecr_untagged_image_expiry_days" {
 }
 
 variable "ecr_max_image_count" {
-  description = "Maximum number of tagged images to keep (0 = unlimited)"
+  description = "Maximum number of tagged images to keep (0 = unlimited). Ignored when application_slugs is set (per-app rules are used instead)."
   type        = number
   default     = 0
+}
+
+variable "application_slugs" {
+  description = "List of application slugs sharing this ECR repo. Images are tagged with {slug}-{sha}. Generates per-app lifecycle rules keeping the latest ecr_max_images_per_app images per prefix."
+  type        = list(string)
+  default     = []
+}
+
+variable "ecr_max_images_per_app" {
+  description = "Maximum number of tagged images to keep per application (used with application_slugs)"
+  type        = number
+  default     = 5
 }
 
 # =============================================================================
