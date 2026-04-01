@@ -25,7 +25,7 @@ resource "random_password" "db_password" {
 resource "aws_ssm_parameter" "db_password" {
   count = var.enable_rds ? 1 : 0
 
-  name  = "/${local.name_prefix}/database/password"
+  name  = "${local.ssm_prefix}/database/password"
   type  = "SecureString"
   value = random_password.db_password[0].result
 
