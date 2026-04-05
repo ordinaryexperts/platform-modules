@@ -1,6 +1,6 @@
-# OE Platform Modules
+# Opsitron Modules
 
-Vetted OpenTofu/Terraform modules for [OE Platform](https://github.com/ordinaryexperts/platform) clients.
+Vetted OpenTofu/Terraform modules for [Opsitron](https://opsitron.com) clients.
 
 ## Usage
 
@@ -8,7 +8,7 @@ Reference modules from client config repositories:
 
 ```hcl
 module "website" {
-  source = "github.com/ordinaryexperts/platform-modules//modules/static-website?ref=static-website-v1.3.0"
+  source = "github.com/ordinaryexperts/opsitron-modules//modules/static-website?ref=static-website-v1.3.0"
 
   name            = "my-app"
   environment     = "prod1"
@@ -24,13 +24,14 @@ module "website" {
 | [artifact-bucket](./modules/artifact-bucket) | Storage | S3 bucket for build artifacts with cross-account access |
 | [ecr-repository](./modules/ecr-repository) | Storage | ECR repository with cross-account pull and lifecycle cleanup |
 | [ecs-webapp](./modules/ecs-webapp) | Compute | ECS Fargate app with ALB, optional RDS, Redis, S3, worker, SES |
-| [lza-foundation](./modules/lza-foundation) | Landing Zone | AWS Landing Zone Accelerator foundation and Platform integration |
+| [lza-foundation](./modules/lza-foundation) | Landing Zone | AWS Landing Zone Accelerator foundation and Opsitron integration |
 | [shared-services](./modules/shared-services) | Storage | Combined ECR + artifact bucket for SharedServices account |
 | [static-website](./modules/static-website) | Compute | S3 + CloudFront static website with OAC and custom domains |
 
 Each module includes:
 - `README.md` - Usage documentation and examples
-- `module.json` - Module metadata (synced to OE Platform)
+- `CHANGELOG.md` - Version history
+- `module.json` - Module metadata (synced to Opsitron)
 - `variables.tf` - Input variables with descriptions
 - `outputs.tf` - Output values
 - `main.tf` - Resource definitions
@@ -38,7 +39,7 @@ Each module includes:
 
 ## module.json
 
-Each module has a `module.json` that defines metadata synced to OE Platform for the module catalog and AI agent context:
+Each module has a `module.json` that defines metadata synced to Opsitron for the module catalog and AI agent context:
 
 ```json
 {
@@ -118,7 +119,7 @@ feature/*      <-- short-lived feature branches
    git push origin "static-website-v1.4.0"
    ```
 
-   This triggers the release workflow which notifies OE Platform to update the module catalog.
+   This triggers the release workflow which notifies Opsitron to update the module catalog.
 
 **Key principles:**
 - Keep feature branches short-lived (hours to days, not weeks)
@@ -132,6 +133,7 @@ feature/*      <-- short-lived feature branches
 All modules must include:
 
 - [ ] `README.md` with usage example
+- [ ] `CHANGELOG.md` with version history
 - [ ] `module.json` with metadata
 - [ ] All variables have `description` and `type`
 - [ ] All outputs have `description`
